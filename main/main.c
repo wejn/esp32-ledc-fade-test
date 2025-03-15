@@ -68,9 +68,13 @@ void test1(void)
     
     ESP_LOGI(TAG, "Test 1: Sequential fades on one channel");
     // Start with 0 duty
+    PULSE_SIGNAL_GPIO();
     ESP_ERROR_CHECK(ledc_set_duty(MY_LEDC_MODE, MY_FIRST_CHAN, 0));
     ESP_ERROR_CHECK(ledc_update_duty(MY_LEDC_MODE, MY_FIRST_CHAN));
+    PULSE_SIGNAL_GPIO();
     ESP_LOGI(TAG, "Initial duty: %lu", ledc_get_duty(MY_LEDC_MODE, MY_FIRST_CHAN));
+
+    vTaskDelay(MY_QUICK_SNOOZE / portTICK_PERIOD_MS);
 
     // Start a long fade to max
     ESP_LOGI(TAG, "Starting long fade to max duty");
@@ -105,9 +109,12 @@ void test2(void)
     ESP_LOGI(TAG, "Test 2: Rapid successive fades on one channel");
     
     // Initialize to 0
+    PULSE_SIGNAL_GPIO();
     ESP_ERROR_CHECK(ledc_set_duty(MY_LEDC_MODE, MY_FIRST_CHAN, 0));
     ESP_ERROR_CHECK(ledc_update_duty(MY_LEDC_MODE, MY_FIRST_CHAN));
+    PULSE_SIGNAL_GPIO();
     
+    vTaskDelay(MY_QUICK_SNOOZE / portTICK_PERIOD_MS);
 
     // Trigger multiple fades in quick succession
     ESP_LOGI(TAG, "Starting fade to 25%% duty");
