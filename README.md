@@ -4,7 +4,9 @@
 
 A quick test suite that I originally wrote to test behavior of `LEDC` non-blocking fading (on ESP32-C6).
 
-For background info see [FIXME: link blogpost].
+For background info see [Testing ESP32's LEDC "non-blocking"
+fading](https://wejn.org/2025/03/testing-esp32-ledc-nonblocking-fading/)
+blogpost.
 
 ## Compilation
 
