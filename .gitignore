@@ -1,0 +1,9 @@
+bin
+build
+dependencies.lock
+managed_components
+sdkconfig
+sdkconfig.old
+screenlog.*
+Makefile
+notes.txt

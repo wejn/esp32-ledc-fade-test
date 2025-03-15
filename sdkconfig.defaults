@@ -1,0 +1,3 @@
+# Let's have some colors, shall we?
+CONFIG_BOOTLOADER_LOG_COLORS=y
+CONFIG_LOG_COLORS=y
