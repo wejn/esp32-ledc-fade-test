@@ -57,30 +57,25 @@ static void ledc_init(void)
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel2));
 }
 
-#define PULSE_SIGNAL_GPIO() do { \
-    gpio_set_level(SIGNAL_GPIO, 1); \
-    gpio_set_level(SIGNAL_GPIO, 0); \
-} while(0)
-
 void test1(void)
 {
     const uint32_t max_duty = (1 << MY_DUTY_RES) - 1;
     
     ESP_LOGI(TAG, "Test 1: Sequential fades on one channel");
     // Start with 0 duty
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 1);
     ESP_ERROR_CHECK(ledc_set_duty(MY_LEDC_MODE, MY_FIRST_CHAN, 0));
     ESP_ERROR_CHECK(ledc_update_duty(MY_LEDC_MODE, MY_FIRST_CHAN));
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 0);
     ESP_LOGI(TAG, "Initial duty: %lu", ledc_get_duty(MY_LEDC_MODE, MY_FIRST_CHAN));
 
     vTaskDelay(MY_QUICK_SNOOZE / portTICK_PERIOD_MS);
 
     // Start a long fade to max
     ESP_LOGI(TAG, "Starting long fade to max duty");
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 1);
     ESP_ERROR_CHECK(ledc_set_fade_time_and_start(MY_LEDC_MODE, MY_FIRST_CHAN, max_duty, MY_LONG_FADE_TIME, LEDC_FADE_NO_WAIT));
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 0);
     
     // Record duty before interruption
     vTaskDelay(MY_QUICK_SNOOZE / portTICK_PERIOD_MS);
@@ -89,9 +84,9 @@ void test1(void)
     
     // Interrupt with a fade to 0
     ESP_LOGI(TAG, "Interrupting with fade to 0");
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 1);
     ESP_ERROR_CHECK(ledc_set_fade_time_and_start(MY_LEDC_MODE, MY_FIRST_CHAN, 0, MY_SHORT_FADE_TIME, LEDC_FADE_NO_WAIT));
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 0);
     
     // Wait for the second fade to complete
     vTaskDelay(MY_LONG_FADE_TIME / portTICK_PERIOD_MS);
@@ -109,36 +104,36 @@ void test2(void)
     ESP_LOGI(TAG, "Test 2: Rapid successive fades on one channel");
     
     // Initialize to 0
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 1);
     ESP_ERROR_CHECK(ledc_set_duty(MY_LEDC_MODE, MY_FIRST_CHAN, 0));
     ESP_ERROR_CHECK(ledc_update_duty(MY_LEDC_MODE, MY_FIRST_CHAN));
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 0);
     
     vTaskDelay(MY_QUICK_SNOOZE / portTICK_PERIOD_MS);
 
     // Trigger multiple fades in quick succession
     ESP_LOGI(TAG, "Starting fade to 25%% duty");
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 1);
     ESP_ERROR_CHECK(ledc_set_fade_time_and_start(MY_LEDC_MODE, MY_FIRST_CHAN, max_duty/4, MY_LONG_FADE_TIME, LEDC_FADE_NO_WAIT));
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 0);
     
     vTaskDelay(MY_QUICK_SNOOZE / portTICK_PERIOD_MS);
     ESP_LOGI(TAG, "Quickly overriding with fade to 50%% duty");
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 1);
     ESP_ERROR_CHECK(ledc_set_fade_time_and_start(MY_LEDC_MODE, MY_FIRST_CHAN, mid_duty, MY_LONG_FADE_TIME/2, LEDC_FADE_NO_WAIT));
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 0);
     
     vTaskDelay(MY_QUICK_SNOOZE / portTICK_PERIOD_MS);
     ESP_LOGI(TAG, "Quickly overriding with fade to 75%% duty");
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 1);
     ESP_ERROR_CHECK(ledc_set_fade_time_and_start(MY_LEDC_MODE, MY_FIRST_CHAN, 3*max_duty/4, MY_LONG_FADE_TIME/3, LEDC_FADE_NO_WAIT));
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 0);
     
     vTaskDelay(MY_QUICK_SNOOZE / portTICK_PERIOD_MS);
     ESP_LOGI(TAG, "Finally overriding with fade to 100%% duty");
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 1);
     ESP_ERROR_CHECK(ledc_set_fade_time_and_start(MY_LEDC_MODE, MY_FIRST_CHAN, max_duty, MY_QUICK_SNOOZE, LEDC_FADE_NO_WAIT));
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 0);
     
     // Wait for the last fade to complete
     vTaskDelay(MY_LONG_FADE_TIME / portTICK_PERIOD_MS);
@@ -154,13 +149,12 @@ void test3(void)
     
     ESP_LOGI(TAG, "Test 3: Concurrent fades on different channels");
     // Initialize both channels
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 1);
     ESP_ERROR_CHECK(ledc_set_duty(MY_LEDC_MODE, MY_FIRST_CHAN, 0));
     ESP_ERROR_CHECK(ledc_update_duty(MY_LEDC_MODE, MY_FIRST_CHAN));
-    PULSE_SIGNAL_GPIO();
     ESP_ERROR_CHECK(ledc_set_duty(MY_LEDC_MODE, MY_SECOND_CHAN, max_duty));
     ESP_ERROR_CHECK(ledc_update_duty(MY_LEDC_MODE, MY_SECOND_CHAN));
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 0);
 
     vTaskDelay(MY_QUICK_SNOOZE / portTICK_PERIOD_MS);
     
@@ -170,11 +164,10 @@ void test3(void)
     
     // Start fades in opposite directions
     ESP_LOGI(TAG, "Starting concurrent fades in opposite directions");
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 1);
     ESP_ERROR_CHECK(ledc_set_fade_time_and_start(MY_LEDC_MODE, MY_FIRST_CHAN, max_duty, MY_LONG_FADE_TIME, LEDC_FADE_NO_WAIT));
-    PULSE_SIGNAL_GPIO();
     ESP_ERROR_CHECK(ledc_set_fade_time_and_start(MY_LEDC_MODE, MY_SECOND_CHAN, 0, MY_LONG_FADE_TIME, LEDC_FADE_NO_WAIT));
-    PULSE_SIGNAL_GPIO();
+    gpio_set_level(SIGNAL_GPIO, 0);
     
     // Check duties mid-fade
     vTaskDelay(MY_LONG_FADE_TIME/2 / portTICK_PERIOD_MS);
@@ -197,7 +190,7 @@ void app_main(void)
     ledc_init();
     
     ESP_ERROR_CHECK(ledc_fade_func_install(0));
-    
+
     ESP_LOGI(TAG, "==== LEDC Concurrent Fades Test ====");
     
     ESP_LOGI(TAG, "Boot button config...");
