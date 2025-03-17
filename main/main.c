@@ -5,6 +5,7 @@
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_timer.h"
+#include "esp_random.h"
 
 #define TAG "LEDC_TEST"
 
@@ -56,6 +57,7 @@ static void ledc_init(void)
         .hpoint         = 0
     };
     ESP_ERROR_CHECK(ledc_channel_config(&ledc_channel2));
+
 }
 
 #define MEASURE(_label, what) do { \
@@ -212,6 +214,58 @@ void test3(void)
     ESP_LOGI(TAG, "Final duties - Channel 1: %lu (expected near max), Channel 2: %lu (expected near 0)", final_duty1, final_duty2);
 }
 
+static void test4_task(void *pvParameters) {
+    const uint32_t max_duty = (1 << MY_DUTY_RES) - 1;
+    uint32_t duty = 0;
+    while (1) {
+        duty = esp_random() % max_duty;
+        ESP_ERROR_CHECK(ledc_fade_stop(MY_LEDC_MODE, MY_FIRST_CHAN));
+        ESP_ERROR_CHECK(ledc_set_fade_time_and_start(MY_LEDC_MODE, MY_FIRST_CHAN, duty, MY_SHORT_FADE_TIME, LEDC_FADE_NO_WAIT));
+        ESP_ERROR_CHECK(ledc_fade_stop(MY_LEDC_MODE, MY_SECOND_CHAN));
+        ESP_ERROR_CHECK(ledc_set_fade_time_and_start(MY_LEDC_MODE, MY_SECOND_CHAN, max_duty - duty, MY_SHORT_FADE_TIME, LEDC_FADE_NO_WAIT));
+        vTaskDelay((MY_SHORT_FADE_TIME) / portTICK_PERIOD_MS);
+    }
+}
+
+void test4(void)
+{
+    /* XXX: This will trigger much more readily if you add:
+     * vTaskDelay(10 / portTICK_PERIOD_MS);
+     * right after https://github.com/espressif/esp-idf/blob/1f46216a7214e27c1e351b4310acf7fcd77029d4/components/esp_driver_ledc/src/ledc.c#L1500
+     */
+    ESP_LOGI(TAG, "Test 4: esp-idf issue #15580");
+    ESP_LOGW(TAG, "Let go of the BOOT button (only press it when you want this to stop)...");
+    uint64_t start_time = esp_timer_get_time();
+    uint64_t grace_period = 3 * 1000 * 1000; // this many seconds we don't care about BOOT button state
+    static TaskHandle_t th1;
+    static TaskHandle_t th2;
+
+    ESP_ERROR_CHECK(ledc_set_duty(MY_LEDC_MODE, MY_FIRST_CHAN, 0));
+    ESP_ERROR_CHECK(ledc_set_duty(MY_LEDC_MODE, MY_SECOND_CHAN, 0));
+    ESP_ERROR_CHECK(ledc_update_duty(MY_LEDC_MODE, MY_FIRST_CHAN));
+    ESP_ERROR_CHECK(ledc_update_duty(MY_LEDC_MODE, MY_SECOND_CHAN));
+
+    xTaskCreate(test4_task, "test4-1", 4096, NULL, 4, &th1);
+    xTaskCreate(test4_task, "test4-2", 4096, NULL, 4, &th2);
+
+    uint64_t iters = 0;
+    while (esp_timer_get_time() - start_time < grace_period || gpio_get_level(BUTTON_GPIO)) {
+        if (iters % 23 == 0) {
+            ESP_LOGI(TAG, "Meep-meep...");
+        }
+        vTaskDelay(100 / portTICK_PERIOD_MS);
+        iters++;
+    }
+
+    ESP_LOGI(TAG, "Stopped, let go of the button.");
+    while (!gpio_get_level(BUTTON_GPIO)) {
+        vTaskDelay(MY_QUICK_SNOOZE / portTICK_PERIOD_MS);
+    }
+
+    vTaskDelete(th1);
+    vTaskDelete(th2);
+}
+
 void app_main(void)
 {
     // Initialize LEDC hardware
@@ -258,5 +312,8 @@ void app_main(void)
         
         PUSH("test3 (concurrent fades on two channels)");
         TRIGGER(test3);
+
+        PUSH("test4 (esp-idf issue #15580)");
+        TRIGGER(test4);
     }
 }
