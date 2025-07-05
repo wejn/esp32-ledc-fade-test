@@ -1,6 +1,8 @@
 #!/bin/bash
-#IDFVER=v5.3.2
-IDFVER=latest
+IDFVER=v5.3.2
+IDFVER=v5.4.2
+#IDFVER=release-v5.5
+#IDFVER=latest
 # make sure we can coexist with docker
 chmod a+w,g+s,o+t $(dirname "$0")
 # run the docker
